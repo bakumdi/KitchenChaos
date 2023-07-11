@@ -1,29 +1,59 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class Player : MonoBehaviour
-{
+{   public static Player Instance { get; private set; }
+    public event EventHandler<OnSelectedCounterChangeEventArg> OnSelectedCounterChanged;
+
+    public class OnSelectedCounterChangeEventArg : EventArgs
+    {
+        public ClearCounter selectedCounter;
+    }
+
+
+
     [SerializeField] float moveSpeed;
     [SerializeField] float rotateSpeed;
     [SerializeField] GameInput gameInput;
     [SerializeField] LayerMask countersLayerMask;
     bool isWalking;
     private Vector3 lastInteration;
+    private ClearCounter selectedCounter;
+
+
+   
+
+
+
     private void Awake()
     {
-        gameInput.OnInteractAction += GameInput_OnInteractAction;
+        if (Instance != null)
+        {
+            Debug.Log("No No No My Friend I cant Instantiate This");
+        }
+        else
+        {
+            Instance = this;
+        }
     }
-
+    private void Start()
+    {
+        
+    }
     private void Update()
     {
         HandleMovement();
         HandleInteractions();
     }
-
+    //--------------------------------------------------------------------------------------------------------//
     private void GameInput_OnInteractAction(object sender, System.EventArgs e)
     {
-        Debug.Log("Player Debug");
+        if (selectedCounter != null)
+        {
+            selectedCounter.Interact();
+        }
     }
 
     private void HandleMovement()
@@ -68,6 +98,7 @@ public class Player : MonoBehaviour
             transform.forward = Vector3.Slerp(transform.forward, moveDir, rotateSpeed * Time.deltaTime);
         }
     }
+    //--------------------------------------------------------------------------------------------------------//
     private void HandleInteractions()
     {
         Vector2 inputVector = gameInput.GetMovementVectorNormalized();
@@ -83,14 +114,31 @@ public class Player : MonoBehaviour
         {
             if (raycastHit.transform.TryGetComponent(out ClearCounter clearCounter))
             {
-                clearCounter.Interact();
+                if (clearCounter != selectedCounter)
+                {
+
+                    SetSelectedCounter(clearCounter);
+                }
+            }
+            else
+            {
+                SetSelectedCounter(null);
             }
         }
         else
         {
-            Debug.Log("-");
+            SetSelectedCounter(null);
         }
     }
+    private void SetSelectedCounter(ClearCounter selectedCounter)
+    {
+        this.selectedCounter = selectedCounter;
+        OnSelectedCounterChanged?.Invoke(this, new OnSelectedCounterChangeEventArg
+        {
+            selectedCounter = selectedCounter
+        });
+    }
+    //--------------------------------------------------------------------------------------------------------//
     public bool IsWalking()
     {
         return isWalking;
