@@ -7,12 +7,23 @@ public class Player : MonoBehaviour
     [SerializeField] float moveSpeed;
     [SerializeField] float rotateSpeed;
     [SerializeField] GameInput gameInput;
+    [SerializeField] LayerMask countersLayerMask;
     bool isWalking;
+    private Vector3 lastInteration;
+    private void Awake()
+    {
+        gameInput.OnInteractAction += GameInput_OnInteractAction;
+    }
 
     private void Update()
     {
         HandleMovement();
         HandleInteractions();
+    }
+
+    private void GameInput_OnInteractAction(object sender, System.EventArgs e)
+    {
+        Debug.Log("Player Debug");
     }
 
     private void HandleMovement()
@@ -62,10 +73,18 @@ public class Player : MonoBehaviour
         Vector2 inputVector = gameInput.GetMovementVectorNormalized();
         Vector3 moveDir = new Vector3(inputVector.x, 0f, inputVector.y);
 
-        float interactDistance = 2f;
-        if (Physics.Raycast(transform.position, moveDir, out RaycastHit raycastHit, interactDistance))
+        if (moveDir != Vector3.zero)
         {
-            Debug.Log(raycastHit.transform);
+            lastInteration = moveDir;
+        }
+
+        float interactDistance = 2f;
+        if (Physics.Raycast(transform.position, lastInteration, out RaycastHit raycastHit, interactDistance, countersLayerMask))
+        {
+            if (raycastHit.transform.TryGetComponent(out ClearCounter clearCounter))
+            {
+                clearCounter.Interact();
+            }
         }
         else
         {
