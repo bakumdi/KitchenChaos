@@ -40,14 +40,17 @@ public class Player : MonoBehaviour
     }
     private void Start()
     {
-        
+        gameInput.OnInteractAction += GameInput_OnInteractAction;
     }
+
     private void Update()
     {
         HandleMovement();
         HandleInteractions();
     }
+
     //--------------------------------------------------------------------------------------------------------//
+
     private void GameInput_OnInteractAction(object sender, System.EventArgs e)
     {
         if (selectedCounter != null)
@@ -98,7 +101,9 @@ public class Player : MonoBehaviour
             transform.forward = Vector3.Slerp(transform.forward, moveDir, rotateSpeed * Time.deltaTime);
         }
     }
+
     //--------------------------------------------------------------------------------------------------------//
+
     private void HandleInteractions()
     {
         Vector2 inputVector = gameInput.GetMovementVectorNormalized();
