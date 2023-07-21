@@ -3,35 +3,33 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Player : MonoBehaviour
-{   public static Player Instance { get; private set; }
-    public event EventHandler<OnSelectedCounterChangeEventArg> OnSelectedCounterChanged;
+public class Player : MonoBehaviour, IKitchenObjectParent
+{
+    public static Player Instance { get; private set; }
 
-    public class OnSelectedCounterChangeEventArg : EventArgs
+    public event EventHandler<OnSelectedCounterChangedEventArgs> OnSelectedCounterChanged;
+    public class OnSelectedCounterChangedEventArgs : EventArgs
     {
-        public ClearCounter selectedCounter;
+        public BaseCounter selectedCounter;
     }
-
-
 
     [SerializeField] float moveSpeed;
     [SerializeField] float rotateSpeed;
     [SerializeField] GameInput gameInput;
     [SerializeField] LayerMask countersLayerMask;
+    [SerializeField] private Transform kitchenObjectHoldPoint;
+    
     bool isWalking;
     private Vector3 lastInteration;
-    private ClearCounter selectedCounter;
-
-
-   
-
+    private BaseCounter selectedCounter;
+    private KitchenObject kitchenObject;
 
 
     private void Awake()
     {
-        if (Instance != null)
+        if(Instance != null)
         {
-            Debug.Log("No No No My Friend I cant Instantiate This");
+            Debug.Log("There is more then player");
         }
         else
         {
@@ -42,23 +40,20 @@ public class Player : MonoBehaviour
     {
         gameInput.OnInteractAction += GameInput_OnInteractAction;
     }
-
     private void Update()
     {
         HandleMovement();
         HandleInteractions();
     }
 
-    //--------------------------------------------------------------------------------------------------------//
 
     private void GameInput_OnInteractAction(object sender, System.EventArgs e)
     {
         if (selectedCounter != null)
         {
-            selectedCounter.Interact();
+            selectedCounter.Interact(this);
         }
     }
-
     private void HandleMovement()
     {
         Vector2 inputVector = gameInput.GetMovementVectorNormalized();
@@ -101,9 +96,6 @@ public class Player : MonoBehaviour
             transform.forward = Vector3.Slerp(transform.forward, moveDir, rotateSpeed * Time.deltaTime);
         }
     }
-
-    //--------------------------------------------------------------------------------------------------------//
-
     private void HandleInteractions()
     {
         Vector2 inputVector = gameInput.GetMovementVectorNormalized();
@@ -117,12 +109,11 @@ public class Player : MonoBehaviour
         float interactDistance = 2f;
         if (Physics.Raycast(transform.position, lastInteration, out RaycastHit raycastHit, interactDistance, countersLayerMask))
         {
-            if (raycastHit.transform.TryGetComponent(out ClearCounter clearCounter))
+            if (raycastHit.transform.TryGetComponent(out BaseCounter baseCounter))
             {
-                if (clearCounter != selectedCounter)
+                if (baseCounter != selectedCounter)
                 {
-
-                    SetSelectedCounter(clearCounter);
+                    SetSelectedCounter(baseCounter);
                 }
             }
             else
@@ -135,17 +126,36 @@ public class Player : MonoBehaviour
             SetSelectedCounter(null);
         }
     }
-    private void SetSelectedCounter(ClearCounter selectedCounter)
+    private void SetSelectedCounter(BaseCounter selectedCounter)
     {
         this.selectedCounter = selectedCounter;
-        OnSelectedCounterChanged?.Invoke(this, new OnSelectedCounterChangeEventArg
+        OnSelectedCounterChanged?.Invoke(this, new OnSelectedCounterChangedEventArgs
         {
-            selectedCounter = selectedCounter
+            selectedCounter = selectedCounter // EventArgs'daki selectedCounter = Player'daki selectedCounter;
         });
     }
-    //--------------------------------------------------------------------------------------------------------//
     public bool IsWalking()
     {
         return isWalking;
+    }
+    public void SetKitchenObject(KitchenObject kitchenObject)
+    {
+        this.kitchenObject = kitchenObject;
+    }
+    public KitchenObject GetKitchenObject()
+    {
+        return this.kitchenObject;
+    }
+    public bool HasKitchenObject()
+    {
+        return kitchenObject != null;
+    }
+    public void ClearKitchenObject()
+    {
+        this.kitchenObject = null;
+    }
+    public Transform GetKitchenObjectFollowTransform()
+    {
+        return kitchenObjectHoldPoint;
     }
 }
